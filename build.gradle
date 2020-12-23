@@ -1,0 +1,85 @@
+import org.apache.tools.ant.DirectoryScanner
+
+task duplicate (type: Copy) {
+	doFirst {
+		DirectoryScanner.defaultExcludes.each { DirectoryScanner.removeDefaultExclude it }
+		DirectoryScanner.addDefaultExclude '**/.git'
+	}
+
+	def to = project.hasProperty("to") ? project.property("to") : ""
+	if (to == "")
+		throw new GradleException('error occurred')
+		
+	from 'xtext-languageserver-example'
+	into to
+
+	doLast {
+		DirectoryScanner.resetDefaultExcludes()
+	}
+}
+
+task renameLanguage () {
+	def ext = project.hasProperty("ext") ? project.property("ext") : ""
+	if (ext == "")
+		throw new GradleException('error occurred')
+
+	//replacement
+	def extString = "\"" + ext + "\""
+	def genExtString = "generate " + ext
+	def importToken = "import org.xtext.example.mydsl.myDsl"
+	def importValue = "import org.xtext.example.mydsl." + ext
+	def dslToken = "MyDslPackage"
+	def dslValu = ext.capitalize() + "Package"
+	def scopeNameToken = "text.mydsl"
+	def scopeNameValu = "text." + ext
+	def fileTypesToken = "\"mydsl\""
+	def fileTypesValu = "\"" + ext + "\""
+	def documentSelectorToken = "documentSelector: ['mydsl']"
+	def documentSelectorValue = "documentSelector: ['" + ext + "']"
+	def languageIdToken = "activeEditor.document.languageId !== 'mydsl'"
+	def languageIdValue = "activeEditor.document.languageId !== '" + ext + "'"
+	def extensionsToken = "\".mydsl\""
+	def extensionsValu = "\"." + ext + "\""
+	def activationEventsToken = "onLanguage:mydsl"
+	def activationEventsValu = "onLanguage:" + ext
+	
+	def to = project.hasProperty("to") ? project.property("to") : ""
+	if (to == "")
+		throw new GradleException('error occurred')
+		
+	//path
+	def mwe2Path = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/GenerateMyDsl.mwe2"
+	def xtextPath = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/MyDsl.xtext"
+	def replaceDirForm = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/formatting2"
+	def replaceDirGen = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/generator"
+	def replaceDirSco = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/scoping"
+	def replaceDirVali = to + "/org.xtext.example.mydsl/src/org/xtext/example/mydsl/validation"
+	def replaceDirCoAssi = to + "/org.xtext.example.mydsl.ide/src/org/xtext/example/mydsl/ide/contentassist"
+	def replaceDirSyntax = to + "/vscode-extension-self-contained/syntaxes"
+	def replaceDirExt = to + "/vscode-extension-self-contained/src"
+	def replaceDirVsRoot = to + "/vscode-extension-self-contained"
+	
+	doFirst {
+		ant.replace(file: mwe2Path, token: fileTypesToken, value: extString)
+		ant.replace(file: xtextPath, token: "generate myDsl", value: genExtString)
+		ant.replace(dir: replaceDirForm, token: importToken, value: importValue) {include(name: '**.xtend')}
+		ant.replace(dir: replaceDirGen, token: importToken, value: importValue) {include(name: '**.xtend')}
+		ant.replace(dir: replaceDirSco, token: importToken, value: importValue) {include(name: '**.java')}
+		ant.replace(dir: replaceDirVali, token: importToken, value: importValue) {include(name: '**.java')}
+		ant.replace(dir: replaceDirVali, token: dslToken, value: dslValu) {include(name: '**.java')}
+		ant.replace(dir: replaceDirCoAssi, token: importToken, value: importValue) {include(name: '**.xtend')}
+		ant.replace(dir: replaceDirCoAssi, token: dslToken, value: dslValu) {include(name: '**.xtend')}
+		ant.replace(dir: replaceDirSyntax, token: scopeNameToken, value: scopeNameValu) {include(name: '**.json')}
+		ant.replace(dir: replaceDirSyntax, token: fileTypesToken, value: fileTypesValu) {include(name: '**.json')}
+		ant.replace(dir: replaceDirExt, token: documentSelectorToken, value: documentSelectorValue) {include(name: '**.ts')}
+		ant.replace(dir: replaceDirExt, token: languageIdToken, value: languageIdValue) {include(name: '**.ts')}
+		ant.replace(dir: replaceDirVsRoot, token: fileTypesToken, value: fileTypesValu) {include(name: '**.json')}
+		ant.replace(dir: replaceDirVsRoot, token: scopeNameToken, value: scopeNameValu) {include(name: '**.json')}
+		ant.replace(dir: replaceDirVsRoot, token: extensionsToken, value: extensionsValu) {include(name: '**.json')}
+		ant.replace(dir: replaceDirVsRoot, token: activationEventsToken, value: activationEventsValu) {include(name: '**.json')}
+	}
+}
+
+renameLanguage.mustRunAfter duplicate
+
+task duplicateXtextVscode(dependsOn: [duplicate, renameLanguage])
